@@ -20,6 +20,9 @@
         border-radius: 5px;
         margin-bottom: 30px;
     }
+    .btn-group-sm > .btn {
+        margin-right: 5px;
+    }
 </style>
 {% endblock %}
 
@@ -101,7 +104,10 @@
                                 </span>
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-warning" onclick="editUser({{ user.user_id }})">编辑</button>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-warning" onclick="editUser({{ user.user_id }})">编辑</button>
+                                    <button class="btn btn-danger" onclick="deleteUser({{ user.user_id }})">删除</button>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -111,6 +117,51 @@
         </div>
     </div>
 </div>
+
+<!-- 编辑用户模态框 -->
+<div class="modal fade" id="editUserModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">编辑用户</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="edit_user_id">
+                    <div class="form-group">
+                        <label for="edit_username">用户名</label>
+                        <input type="text" class="form-control" id="edit_username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_email">邮箱</label>
+                        <input type="email" class="form-control" id="edit_email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_age">年龄</label>
+                        <input type="number" class="form-control" id="edit_age" min="1" max="150">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_password">新密码（可选）</label>
+                        <input type="password" class="form-control" id="edit_password">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_is_active">状态</label>
+                        <select class="form-control" id="edit_is_active">
+                            <option value="true">激活</option>
+                            <option value="false">禁用</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitEdit()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -157,8 +208,86 @@ function toggleUserStatus(userId) {
 }
 
 function editUser(userId) {
-    // TODO: 实现用户编辑功能
-    alert('编辑功能正在开发中...');
+    // 获取用户信息并显示编辑模态框
+    fetch(`/get_user/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('错误：' + data.error);
+                return;
+            }
+            
+            // 填充表单
+            document.getElementById('edit_user_id').value = data.user_id;
+            document.getElementById('edit_username').value = data.username;
+            document.getElementById('edit_email').value = data.email;
+            document.getElementById('edit_age').value = data.age || '';
+            document.getElementById('edit_password').value = '';
+            document.getElementById('edit_is_active').value = data.is_active ? 'true' : 'false';
+            
+            // 显示模态框
+            $('#editUserModal').modal('show');
+        })
+        .catch(error => {
+            alert('获取用户信息失败：' + error);
+        });
+}
+
+function submitEdit() {
+    const userId = document.getElementById('edit_user_id').value;
+    const formData = new FormData();
+    
+    // 收集表单数据
+    formData.append('username', document.getElementById('edit_username').value);
+    formData.append('email', document.getElementById('edit_email').value);
+    formData.append('age', document.getElementById('edit_age').value);
+    formData.append('is_active', document.getElementById('edit_is_active').value);
+    
+    const password = document.getElementById('edit_password').value;
+    if (password) {
+        formData.append('password', password);
+    }
+    
+    // 发送更新请求
+    fetch(`/edit_user/${userId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+            $('#editUserModal').modal('hide');
+            location.reload();
+        } else {
+            alert('错误：' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('更新失败：' + error);
+    });
+}
+
+function deleteUser(userId) {
+    if (!confirm('确定要删除这个用户吗？此操作不可撤销。')) {
+        return;
+    }
+    
+    fetch(`/delete_user/${userId}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('错误：' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('删除失败：' + error);
+    });
 }
 </script>
 {% endblock %} 
