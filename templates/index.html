@@ -1,0 +1,164 @@
+{% extends "bootstrap/base.html" %}
+
+{% block title %}用户管理系统{% endblock %}
+
+{% block styles %}
+{{super()}}
+<style>
+    .container { margin-top: 50px; }
+    .table { margin-top: 20px; }
+    .form-group { margin-bottom: 15px; }
+    .status-badge {
+        cursor: pointer;
+    }
+    .table th {
+        background-color: #f8f9fa;
+    }
+    .form-panel {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 30px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="text-center mb-4">用户管理系统</h1>
+    
+    <!-- 添加用户表单 -->
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <div class="form-panel">
+                <h3 class="text-primary mb-3">添加新用户</h3>
+                <form id="addUserForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="username">用户名 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="email">邮箱 <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="password">密码 <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="age">年龄</label>
+                                <input type="number" class="form-control" id="age" name="age" min="1" max="150">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">添加用户</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户数据表格 -->
+    <div class="row">
+        <div class="col-md-12">
+            <h3 class="text-primary">用户列表</h3>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>用户ID</th>
+                            <th>用户名</th>
+                            <th>邮箱</th>
+                            <th>年龄</th>
+                            <th>创建时间</th>
+                            <th>更新时间</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in data %}
+                        <tr>
+                            <td>{{ user.user_id }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.age if user.age else '-' }}</td>
+                            <td>{{ user.created_at }}</td>
+                            <td>{{ user.updated_at }}</td>
+                            <td>
+                                <span class="status-badge badge {% if user.is_active %}badge-success{% else %}badge-danger{% endif %}"
+                                      onclick="toggleUserStatus({{ user.user_id }})">
+                                    {{ '激活' if user.is_active else '禁用' }}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" onclick="editUser({{ user.user_id }})">编辑</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{super()}}
+<script>
+document.getElementById('addUserForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/add_user', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('错误：' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('提交失败：' + error);
+    });
+});
+
+function toggleUserStatus(userId) {
+    fetch(`/toggle_active/${userId}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            location.reload();
+        } else {
+            alert('错误：' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('操作失败：' + error);
+    });
+}
+
+function editUser(userId) {
+    // TODO: 实现用户编辑功能
+    alert('编辑功能正在开发中...');
+}
+</script>
+{% endblock %} 
